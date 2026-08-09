@@ -44,14 +44,6 @@ public class UpdateBookRequest {
     @Positive
     private Integer totalPages;
 
-    @NotNull
-    @Positive
-    private Integer totalCopies;
-
-    @NotNull
-    @PositiveOrZero
-    private Integer availableCopies;
-
     @Size(max = 100)
     private String shelfLocation;
 

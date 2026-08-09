@@ -2,7 +2,6 @@ package com.booktrack.book.validator;
 
 import com.booktrack.book.entity.Book;
 import com.booktrack.book.repository.BookRepository;
-import com.booktrack.exception.BadRequestException;
 import com.booktrack.exception.DuplicateResourceException;
 import com.booktrack.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -54,16 +53,16 @@ public class BookValidator {
                 });
     }
 
-    public void validateAvailableCopies(
-            Integer totalCopies,
-            Integer availableCopies) {
+    // public void validateAvailableCopies(
+    //         Integer totalCopies,
+    //         Integer availableCopies) {
 
-        if (availableCopies > totalCopies) {
+    //     if (availableCopies > totalCopies) {
 
-            throw new BadRequestException(
-                    "Available copies cannot be greater than total copies."
-            );
-        }
-    }
+    //         throw new BadRequestException(
+    //                 "Available copies cannot be greater than total copies."
+    //         );
+    //     }
+    // }
 
 }

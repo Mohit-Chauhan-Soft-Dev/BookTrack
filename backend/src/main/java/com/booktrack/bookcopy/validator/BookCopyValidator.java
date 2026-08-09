@@ -35,23 +35,4 @@ public class BookCopyValidator {
             );
         }
     }
-
-    public void validateDuplicateBarcodeForUpdate(
-            Long bookCopyId,
-            String barcode) {
-
-        String normalizedBarcode = barcode.trim();
-
-        bookCopyRepository.findByBarcode(normalizedBarcode)
-                .ifPresent(existingBookCopy -> {
-
-                    if (!existingBookCopy.getId().equals(bookCopyId)) {
-
-                        throw new DuplicateResourceException(
-                                "Book copy already exists with barcode: "
-                                        + normalizedBarcode
-                        );
-                    }
-                });
-    }
 }

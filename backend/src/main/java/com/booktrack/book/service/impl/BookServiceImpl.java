@@ -94,9 +94,9 @@ public class BookServiceImpl implements BookService {
                 id,
                 isbn);
 
-        bookValidator.validateAvailableCopies(
-                request.getTotalCopies(),
-                request.getAvailableCopies());
+        // bookValidator.validateAvailableCopies(
+        //         request.getTotalCopies(),
+        //         request.getAvailableCopies());
 
         request.setIsbn(isbn);
 

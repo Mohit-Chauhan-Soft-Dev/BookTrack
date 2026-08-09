@@ -26,155 +26,149 @@ import com.booktrack.bookcopy.enums.BookCopyStatus;
 @Transactional
 public class BookCopyServiceImpl implements BookCopyService {
 
-    private final BookCopyRepository bookCopyRepository;
+        private final BookCopyRepository bookCopyRepository;
 
-    private final BookCopyMapper bookCopyMapper;
+        private final BookCopyMapper bookCopyMapper;
 
-    private final BookCopyValidator bookCopyValidator;
+        private final BookCopyValidator bookCopyValidator;
 
-    private final BookValidator bookValidator;
+        private final BookValidator bookValidator;
 
-    private final PageResponseMapper pageResponseMapper;
+        private final PageResponseMapper pageResponseMapper;
 
-    @Override
-    public BookCopyResponse createBookCopy(
-            CreateBookCopyRequest request) {
+        @Override
+        public BookCopyResponse createBookCopy(
+                        CreateBookCopyRequest request) {
 
-        String barcode = request.getBarcode().trim();
+                String barcode = request.getBarcode().trim();
 
-        bookCopyValidator.validateDuplicateBarcode(barcode);
+                bookCopyValidator.validateDuplicateBarcode(barcode);
 
-        Book book =
-                bookValidator.validateBookExists(
-                        request.getBookId());
+                Book book = bookValidator.validateBookExists(
+                                request.getBookId());
 
-        if (!book.isActive()) {
+                if (!book.isActive()) {
 
-            throw new BadRequestException(
-                    "Cannot create a copy for an inactive book."
-            );
+                        throw new BadRequestException(
+                                        "Cannot create a copy for an inactive book.");
+                }
+
+                request.setBarcode(barcode);
+
+                BookCopy bookCopy = bookCopyMapper.toEntity(request);
+
+                bookCopy.setBook(book);
+
+                book.setTotalCopies(book.getTotalCopies() + 1);
+                book.setAvailableCopies(book.getAvailableCopies() + 1);
+
+                BookCopy savedBookCopy = bookCopyRepository.save(bookCopy);
+
+                return bookCopyMapper.toResponse(savedBookCopy);
         }
 
-        request.setBarcode(barcode);
+        @Override
+        public BookCopyResponse updateBookCopy(
+                        Long id,
+                        UpdateBookCopyRequest request) {
 
-        BookCopy bookCopy =
-                bookCopyMapper.toEntity(request);
+                BookCopy bookCopy = bookCopyValidator.validateBookCopyExists(id);
 
-        bookCopy.setBook(book);
+                bookCopyMapper.updateEntity(
+                                bookCopy,
+                                request);
 
-        BookCopy savedBookCopy =
+                BookCopy updatedBookCopy = bookCopyRepository.save(bookCopy);
+
+                return bookCopyMapper.toResponse(updatedBookCopy);
+        }
+
+        @Override
+        public void deleteBookCopy(Long id) {
+
+                BookCopy bookCopy = bookCopyValidator.validateBookCopyExists(id);
+
+                if (!bookCopy.isActive()) {
+
+                        throw new BadRequestException(
+                                        "Book copy is already inactive.");
+                }
+
+                if (bookCopy.getStatus() == BookCopyStatus.BORROWED) {
+
+                        throw new BadRequestException(
+                                        "Borrowed book copy cannot be deleted.");
+                }
+
+                Book book = bookCopy.getBook();
+
+                book.setTotalCopies(
+                                book.getTotalCopies() - 1);
+
+                if (bookCopy.getStatus() == BookCopyStatus.AVAILABLE) {
+
+                        book.setAvailableCopies(
+                                        book.getAvailableCopies() - 1);
+                }
+
+                bookCopy.setActive(false);
+
                 bookCopyRepository.save(bookCopy);
-
-        return bookCopyMapper.toResponse(savedBookCopy);
-    }
-
-    @Override
-    public BookCopyResponse updateBookCopy(
-            Long id,
-            UpdateBookCopyRequest request) {
-
-        BookCopy bookCopy =
-                bookCopyValidator.validateBookCopyExists(id);
-
-        bookCopyMapper.updateEntity(
-                bookCopy,
-                request
-        );
-
-        BookCopy updatedBookCopy =
-                bookCopyRepository.save(bookCopy);
-
-        return bookCopyMapper.toResponse(updatedBookCopy);
-    }
-
-    @Override
-    public void deleteBookCopy(Long id) {
-
-        BookCopy bookCopy =
-                bookCopyValidator.validateBookCopyExists(id);
-
-        if (!bookCopy.isActive()) {
-
-            throw new BadRequestException(
-                    "Book copy is already inactive."
-            );
         }
 
-        if (bookCopy.getStatus() == BookCopyStatus.BORROWED) {
+        @Override
+        @Transactional(readOnly = true)
+        public BookCopyResponse getBookCopyById(Long id) {
 
-            throw new BadRequestException(
-                    "Borrowed book copy cannot be deleted."
-            );
+                BookCopy bookCopy = bookCopyValidator.validateBookCopyExists(id);
+
+                return bookCopyMapper.toResponse(bookCopy);
         }
 
-        bookCopy.setActive(false);
+        @Override
+        @Transactional(readOnly = true)
+        public PageResponse<BookCopyResponse> getAllBookCopies(
+                        int page,
+                        int size,
+                        String sortBy,
+                        String sortDirection) {
 
-        bookCopyRepository.save(bookCopy);
-    }
+                Pageable pageable = PageableUtils.createPageable(
+                                page,
+                                size,
+                                sortBy,
+                                sortDirection);
 
-    @Override
-    @Transactional(readOnly = true)
-    public BookCopyResponse getBookCopyById(Long id) {
+                Page<BookCopy> bookCopyPage = bookCopyRepository.findAll(pageable);
 
-        BookCopy bookCopy =
-                bookCopyValidator.validateBookCopyExists(id);
+                return pageResponseMapper.toPageResponse(
+                                bookCopyPage,
+                                bookCopyMapper::toResponse);
+        }
 
-        return bookCopyMapper.toResponse(bookCopy);
-    }
+        @Override
+        @Transactional(readOnly = true)
+        public PageResponse<BookCopyResponse> getBookCopiesByBook(
+                        Long bookId,
+                        int page,
+                        int size,
+                        String sortBy,
+                        String sortDirection) {
 
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponse<BookCopyResponse> getAllBookCopies(
-            int page,
-            int size,
-            String sortBy,
-            String sortDirection) {
+                bookValidator.validateBookExists(bookId);
 
-        Pageable pageable =
-                PageableUtils.createPageable(
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                );
+                Pageable pageable = PageableUtils.createPageable(
+                                page,
+                                size,
+                                sortBy,
+                                sortDirection);
 
-        Page<BookCopy> bookCopyPage =
-                bookCopyRepository.findAll(pageable);
+                Page<BookCopy> bookCopyPage = bookCopyRepository.findByBookId(
+                                bookId,
+                                pageable);
 
-        return pageResponseMapper.toPageResponse(
-                bookCopyPage,
-                bookCopyMapper::toResponse
-        );
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponse<BookCopyResponse> getBookCopiesByBook(
-            Long bookId,
-            int page,
-            int size,
-            String sortBy,
-            String sortDirection) {
-
-        bookValidator.validateBookExists(bookId);
-
-        Pageable pageable =
-                PageableUtils.createPageable(
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                );
-
-        Page<BookCopy> bookCopyPage =
-                bookCopyRepository.findByBookId(
-                        bookId,
-                        pageable
-                );
-
-        return pageResponseMapper.toPageResponse(
-                bookCopyPage,
-                bookCopyMapper::toResponse
-        );
-    }
+                return pageResponseMapper.toPageResponse(
+                                bookCopyPage,
+                                bookCopyMapper::toResponse);
+        }
 }

@@ -43,9 +43,9 @@ public class CreateBookRequest {
     @Positive
     private Integer totalPages;
 
-    @NotNull(message = "Total copies are required")
-    @Positive
-    private Integer totalCopies;
+    // @NotNull(message = "Total copies are required")
+    // @Positive
+    // private Integer totalCopies;
 
     @Size(max = 100)
     private String shelfLocation;

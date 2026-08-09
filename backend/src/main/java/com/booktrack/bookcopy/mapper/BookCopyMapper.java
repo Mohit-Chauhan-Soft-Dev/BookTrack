@@ -27,9 +27,9 @@ public class BookCopyMapper {
                 request.getAcquisitionNumber()
         );
 
-        bookCopy.setStatus(
-                request.getStatus()
-        );
+        // bookCopy.setStatus(
+        //         request.getStatus()
+        // );
 
         bookCopy.setShelfLocation(
                 request.getShelfLocation()
@@ -39,9 +39,9 @@ public class BookCopyMapper {
                 request.getConditionNotes()
         );
 
-        bookCopy.setActive(
-                request.isActive()
-        );
+        // bookCopy.setActive(
+        //         request.isActive()
+        // );
     }
 
     public BookCopyResponse toResponse(BookCopy bookCopy) {

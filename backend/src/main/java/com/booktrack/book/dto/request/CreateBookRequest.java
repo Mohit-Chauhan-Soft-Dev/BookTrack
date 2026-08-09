@@ -1,0 +1,68 @@
+package com.booktrack.book.dto.request;
+
+import com.booktrack.book.enums.Language;
+import jakarta.validation.constraints.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+import java.util.Set;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class CreateBookRequest {
+
+    @NotBlank(message = "ISBN is required")
+    @Size(max = 20)
+    private String isbn;
+
+    @NotBlank(message = "Title is required")
+    @Size(max = 255)
+    private String title;
+
+    @Size(max = 255)
+    private String subtitle;
+
+    @Size(max = 5000)
+    private String description;
+
+    @NotNull(message = "Language is required")
+    private Language language;
+
+    @Size(max = 50)
+    private String edition;
+
+    @NotNull(message = "Publication year is required")
+    @Min(1000)
+    @Max(9999)
+    private Integer publicationYear;
+
+    @NotNull(message = "Total pages are required")
+    @Positive
+    private Integer totalPages;
+
+    @NotNull(message = "Total copies are required")
+    @Positive
+    private Integer totalCopies;
+
+    @Size(max = 100)
+    private String shelfLocation;
+
+    @Size(max = 500)
+    private String coverImage;
+
+    @DecimalMin(value = "0.0")
+    private BigDecimal price;
+
+    @NotNull(message = "Category is required")
+    private Long categoryId;
+
+    @NotNull(message = "Publisher is required")
+    private Long publisherId;
+
+    @NotEmpty(message = "At least one author is required")
+    private Set<Long> authorIds;
+
+}

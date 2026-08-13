@@ -23,6 +23,8 @@ public final class ApplicationConstants {
 
     public static final String BOOKS = API_V1 + "/books";
 
+    public static final String INVENTORY = API_V1 + "/inventory";
+
     public static final String USERS = API_V1 + "/users";
 
     public static final String TOKEN_TYPE = "type";

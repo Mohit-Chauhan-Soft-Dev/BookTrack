@@ -23,6 +23,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import com.booktrack.notification.dto.request.CreateNotificationRequest;
+import com.booktrack.notification.enums.NotificationType;
+import com.booktrack.notification.service.NotificationService;
+import org.springframework.security.core.Authentication;
 
 import java.time.LocalDateTime;
 
@@ -40,6 +44,8 @@ public class CirculationServiceImpl implements CirculationService {
         private final PageResponseMapper pageResponseMapper;
 
         private final BookCopyRepository bookCopyRepository;
+
+        private final NotificationService notificationService;
 
         @Override
         public CirculationResponse borrowBook(
@@ -101,6 +107,18 @@ public class CirculationServiceImpl implements CirculationService {
 
                 Circulation savedCirculation = circulationRepository.save(circulation);
 
+                notificationService.createNotification(
+                                CreateNotificationRequest.builder()
+                                                .userId(user.getId())
+                                                .type(NotificationType.BOOK_BORROWED)
+                                                .title("Book Borrowed")
+                                                .message(
+                                                                savedCirculation.getBookCopy()
+                                                                                .getBook()
+                                                                                .getTitle()
+                                                                                + " has been successfully borrowed.")
+                                                .build());
+
                 return circulationMapper.toResponse(
                                 savedCirculation);
         }
@@ -143,6 +161,19 @@ public class CirculationServiceImpl implements CirculationService {
 
                 Circulation updatedCirculation = circulationRepository.save(circulation);
 
+                notificationService.createNotification(
+                                CreateNotificationRequest.builder()
+                                                .userId(
+                                                                circulation.getUser().getId())
+                                                .type(NotificationType.BOOK_RETURNED)
+                                                .title("Book Returned")
+                                                .message(
+                                                                circulation.getBookCopy()
+                                                                                .getBook()
+                                                                                .getTitle()
+                                                                                + " has been successfully returned.")
+                                                .build());
+
                 return circulationMapper.toResponse(
                                 updatedCirculation);
         }
@@ -150,10 +181,25 @@ public class CirculationServiceImpl implements CirculationService {
         @Override
         @Transactional(readOnly = true)
         public CirculationResponse getCirculationById(
-                        Long id) {
+                        Long id,
+                        Authentication authentication) {
 
-                Circulation circulation = circulationValidator.validateCirculationExists(
-                                id);
+                Circulation circulation = circulationValidator.validateCirculationExists(id);
+
+                String authenticatedEmail = authentication.getName();
+
+                boolean privilegedUser = authentication.getAuthorities()
+                                .stream()
+                                .anyMatch(authority -> authority.getAuthority().equals("ROLE_SUPER_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_LIBRARIAN"));
+
+                if (!privilegedUser
+                                && !circulation.getUser().getEmail().equals(authenticatedEmail)) {
+
+                        throw new org.springframework.security.access.AccessDeniedException(
+                                        "You are not authorized to view this circulation.");
+                }
 
                 return circulationMapper.toResponse(
                                 circulation);
@@ -188,10 +234,24 @@ public class CirculationServiceImpl implements CirculationService {
                         int page,
                         int size,
                         String sortBy,
-                        String sortDirection) {
+                        String sortDirection,
+                        Authentication authentication) {
 
-                circulationValidator.validateUserExists(
-                                userId);
+                User requestedUser = circulationValidator.validateUserExists(userId);
+
+                boolean privilegedUser = authentication.getAuthorities()
+                                .stream()
+                                .anyMatch(authority -> authority.getAuthority().equals("ROLE_SUPER_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_LIBRARIAN"));
+
+                if (!privilegedUser
+                                && !requestedUser.getEmail()
+                                                .equals(authentication.getName())) {
+
+                        throw new org.springframework.security.access.AccessDeniedException(
+                                        "You are not authorized to view this user's circulation history.");
+                }
 
                 Pageable pageable = PageableUtils.createPageable(
                                 page,

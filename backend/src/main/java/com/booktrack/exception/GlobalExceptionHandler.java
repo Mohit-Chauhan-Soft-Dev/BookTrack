@@ -3,10 +3,10 @@ package com.booktrack.exception;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-// import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.security.access.AccessDeniedException;
 
 import com.booktrack.common.dto.response.ErrorResponse;
 
@@ -73,19 +73,6 @@ public class GlobalExceptionHandler {
                         MethodArgumentNotValidException ex,
                         HttpServletRequest request) {
 
-                // List<String> errors = ex.getBindingResult()
-                // .getFieldErrors()
-                // .stream()
-                // .map(FieldError::getDefaultMessage)
-                // .toList();
-
-                // List<String> errors = ex.getBindingResult()
-                // .getFieldErrors()
-                // .stream()
-                // .map(FieldError::getDefaultMessage)
-                // .filter(Objects::nonNull)
-                // .toList();
-
                 List<String> errors = ex.getBindingResult()
                                 .getFieldErrors()
                                 .stream()
@@ -106,6 +93,25 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.badRequest().body(response);
         }
 
+        @ExceptionHandler(AccessDeniedException.class)
+        public ResponseEntity<ErrorResponse> handleAccessDenied(
+                        AccessDeniedException ex,
+                        HttpServletRequest request) {
+
+                ErrorResponse response = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.FORBIDDEN.value())
+                                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                                .message("Access Denied")
+                                .details(List.of())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity
+                                .status(HttpStatus.FORBIDDEN)
+                                .body(response);
+        }
+
         @ExceptionHandler(Exception.class)
         public ResponseEntity<ErrorResponse> handleException(
                         Exception ex,
@@ -123,4 +129,24 @@ public class GlobalExceptionHandler {
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                                 .body(response);
         }
+
+        @ExceptionHandler(ForbiddenException.class)
+        public ResponseEntity<ErrorResponse> handleForbidden(
+                        ForbiddenException ex,
+                        HttpServletRequest request) {
+
+                ErrorResponse response = ErrorResponse.builder()
+                                .timestamp(LocalDateTime.now())
+                                .status(HttpStatus.FORBIDDEN.value())
+                                .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                                .message(ex.getMessage())
+                                .details(List.of())
+                                .path(request.getRequestURI())
+                                .build();
+
+                return ResponseEntity
+                                .status(HttpStatus.FORBIDDEN)
+                                .body(response);
+        }
+
 }

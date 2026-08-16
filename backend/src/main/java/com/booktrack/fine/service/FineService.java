@@ -5,6 +5,7 @@ import com.booktrack.fine.dto.request.CreateFineRequest;
 import com.booktrack.fine.dto.request.PayFineRequest;
 import com.booktrack.fine.dto.response.FineResponse;
 
+
 public interface FineService {
 
     FineResponse createFine(

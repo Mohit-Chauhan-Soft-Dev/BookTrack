@@ -19,6 +19,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.booktrack.exception.ResourceNotFoundException;
+import com.booktrack.notification.dto.request.CreateNotificationRequest;
+import com.booktrack.notification.enums.NotificationType;
+import com.booktrack.notification.service.NotificationService;
 
 import java.time.LocalDateTime;
 
@@ -27,135 +30,165 @@ import java.time.LocalDateTime;
 @Transactional
 public class FineServiceImpl implements FineService {
 
-    private final FineRepository fineRepository;
+        private final FineRepository fineRepository;
 
-    private final FineMapper fineMapper;
+        private final FineMapper fineMapper;
 
-    private final FineValidator fineValidator;
+        private final FineValidator fineValidator;
 
-    private final PageResponseMapper pageResponseMapper;
+        private final PageResponseMapper pageResponseMapper;
 
-    @Override
-    public FineResponse createFine(
-            CreateFineRequest request) {
+        private final NotificationService notificationService;
 
-        Circulation circulation = fineValidator.validateCirculationExists(
-                request.getCirculationId());
+        @Override
+        public FineResponse createFine(
+                        CreateFineRequest request) {
 
-        fineValidator.validateDuplicateFine(
-                request.getCirculationId());
+                Circulation circulation = fineValidator.validateCirculationExists(
+                                request.getCirculationId());
 
-        fineValidator.validateFineCreation(
-                circulation);
+                fineValidator.validateDuplicateFine(
+                                request.getCirculationId());
 
-        Fine fine = Fine.builder()
-                .circulation(circulation)
-                .amount(request.getAmount())
-                .reason(request.getReason().trim())
-                .status(FineStatus.UNPAID)
-                .notes(request.getNotes())
-                .build();
+                fineValidator.validateFineCreation(
+                                circulation);
 
-        Fine savedFine = fineRepository.save(fine);
+                Fine fine = Fine.builder()
+                                .circulation(circulation)
+                                .amount(request.getAmount())
+                                .reason(request.getReason().trim())
+                                .status(FineStatus.UNPAID)
+                                .notes(request.getNotes())
+                                .build();
 
-        return fineMapper.toResponse(savedFine);
-    }
+                Fine savedFine = fineRepository.save(fine);
 
-    @Override
-    public FineResponse payFine(
-            PayFineRequest request) {
+                notificationService.createNotification(
+                                CreateNotificationRequest.builder()
+                                                .userId(
+                                                                circulation.getUser().getId())
+                                                .type(
+                                                                NotificationType.FINE_CREATED)
+                                                .title("Fine Created")
+                                                .message(
+                                                                "A fine of ₹"
+                                                                                + savedFine.getAmount()
+                                                                                + " has been created for your account.")
+                                                .build());
 
-        Fine fine = fineValidator.validateFineExists(
-                request.getFineId());
-
-        fineValidator.validatePayableFine(fine);
-
-        fine.setStatus(
-                FineStatus.PAID);
-
-        fine.setPaidAt(
-                LocalDateTime.now());
-
-        if (request.getNotes() != null
-                && !request.getNotes().isBlank()) {
-
-            fine.setNotes(
-                    request.getNotes());
+                return fineMapper.toResponse(savedFine);
         }
 
-        Fine updatedFine = fineRepository.save(fine);
+        @Override
+        public FineResponse payFine(
+                        PayFineRequest request) {
 
-        return fineMapper.toResponse(
-                updatedFine);
-    }
+                Fine fine = fineValidator.validateFineExists(
+                                request.getFineId());
 
-    @Override
-    @Transactional(readOnly = true)
-    public FineResponse getFineById(
-            Long id) {
+                fineValidator.validatePayableFine(fine);
 
-        Fine fine = fineValidator.validateFineExists(id);
+                fine.setStatus(
+                                FineStatus.PAID);
 
-        return fineMapper.toResponse(fine);
-    }
+                fine.setPaidAt(
+                                LocalDateTime.now());
 
-    @Override
-    @Transactional(readOnly = true)
-    public FineResponse getFineByCirculation(
-            Long circulationId) {
+                if (request.getNotes() != null
+                                && !request.getNotes().isBlank()) {
 
-        Fine fine = fineRepository.findByCirculationId(
-                circulationId)
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Fine not found for circulation: "
-                                + circulationId));
+                        fine.setNotes(
+                                        request.getNotes());
+                }
 
-        return fineMapper.toResponse(fine);
-    }
+                Fine updatedFine = fineRepository.save(fine);
 
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponse<FineResponse> getAllFines(
-            int page,
-            int size,
-            String sortBy,
-            String sortDirection) {
+                notificationService.createNotification(
+                                CreateNotificationRequest.builder()
+                                                .userId(
+                                                                fine.getCirculation()
+                                                                                .getUser()
+                                                                                .getId())
+                                                .type(
+                                                                NotificationType.FINE_PAID)
+                                                .title("Fine Paid")
+                                                .message(
+                                                                "Your fine of ₹"
+                                                                                + updatedFine.getAmount()
+                                                                                + " has been paid successfully.")
+                                                .build());
 
-        Pageable pageable = PageableUtils.createPageable(
-                page,
-                size,
-                sortBy,
-                sortDirection);
+                return fineMapper.toResponse(
+                                updatedFine);
+        }
 
-        Page<Fine> finePage = fineRepository.findAll(
-                pageable);
+        @Override
+        @Transactional(readOnly = true)
+        public FineResponse getFineById(
+                        Long id) {
 
-        return pageResponseMapper.toPageResponse(
-                finePage,
-                fineMapper::toResponse);
-    }
+                Fine fine = fineValidator.validateFineExists(id);
 
-    @Override
-    @Transactional(readOnly = true)
-    public PageResponse<FineResponse> getFinesByUser(
-            Long userId,
-            int page,
-            int size,
-            String sortBy,
-            String sortDirection) {
+                return fineMapper.toResponse(fine);
+        }
 
-        Pageable pageable = PageableUtils.createPageable(
-                page,
-                size,
-                sortBy,
-                sortDirection);
+        @Override
+        @Transactional(readOnly = true)
+        public FineResponse getFineByCirculation(
+                        Long circulationId) {
 
-        Page<Fine> finePage = fineRepository.findByCirculationUserId(
-                userId,
-                pageable);
+                Fine fine = fineRepository.findByCirculationId(
+                                circulationId)
+                                .orElseThrow(() -> new ResourceNotFoundException(
+                                                "Fine not found for circulation: "
+                                                                + circulationId));
 
-        return pageResponseMapper.toPageResponse(
-                finePage,
-                fineMapper::toResponse);
-    }
+                return fineMapper.toResponse(fine);
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public PageResponse<FineResponse> getAllFines(
+                        int page,
+                        int size,
+                        String sortBy,
+                        String sortDirection) {
+
+                Pageable pageable = PageableUtils.createPageable(
+                                page,
+                                size,
+                                sortBy,
+                                sortDirection);
+
+                Page<Fine> finePage = fineRepository.findAll(
+                                pageable);
+
+                return pageResponseMapper.toPageResponse(
+                                finePage,
+                                fineMapper::toResponse);
+        }
+
+        @Override
+        @Transactional(readOnly = true)
+        public PageResponse<FineResponse> getFinesByUser(
+                        Long userId,
+                        int page,
+                        int size,
+                        String sortBy,
+                        String sortDirection) {
+
+                Pageable pageable = PageableUtils.createPageable(
+                                page,
+                                size,
+                                sortBy,
+                                sortDirection);
+
+                Page<Fine> finePage = fineRepository.findByCirculationUserId(
+                                userId,
+                                pageable);
+
+                return pageResponseMapper.toPageResponse(
+                                finePage,
+                                fineMapper::toResponse);
+        }
 }

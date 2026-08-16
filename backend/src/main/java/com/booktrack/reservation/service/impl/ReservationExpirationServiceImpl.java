@@ -1,5 +1,8 @@
 package com.booktrack.reservation.service.impl;
 
+import com.booktrack.notification.dto.request.CreateNotificationRequest;
+import com.booktrack.notification.enums.NotificationType;
+import com.booktrack.notification.service.NotificationService;
 import com.booktrack.reservation.entity.Reservation;
 import com.booktrack.reservation.enums.ReservationStatus;
 import com.booktrack.reservation.repository.ReservationRepository;
@@ -14,34 +17,45 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class ReservationExpirationServiceImpl
-        implements ReservationExpirationService {
+                implements ReservationExpirationService {
 
-    private final ReservationRepository reservationRepository;
+        private final ReservationRepository reservationRepository;
 
-    @Override
-    @Transactional
-    public void markExpiredReservations() {
+        private final NotificationService notificationService;
 
-        LocalDateTime now = LocalDateTime.now();
+        @Override
+        @Transactional
+        public void markExpiredReservations() {
 
-        List<Reservation> expiredReservations =
-                reservationRepository.findByStatusAndExpiresAtBefore(
-                        ReservationStatus.PENDING,
-                        now
-                );
+                LocalDateTime now = LocalDateTime.now();
 
-        for (Reservation reservation : expiredReservations) {
+                List<Reservation> expiredReservations =
+                                reservationRepository.findByStatusAndExpiresAtBefore(
+                                                ReservationStatus.PENDING,
+                                                now);
 
-            reservation.setStatus(
-                    ReservationStatus.EXPIRED
-            );
+                for (Reservation reservation : expiredReservations) {
+
+                        reservation.setStatus(
+                                        ReservationStatus.EXPIRED);
+
+                        notificationService.createNotification(
+                                        CreateNotificationRequest.builder()
+                                                        .userId(reservation.getUser().getId())
+                                                        .type(NotificationType.RESERVATION_EXPIRED)
+                                                        .title("Reservation Expired")
+                                                        .message(
+                                                                        "Your reservation for "
+                                                                                        + reservation.getBook()
+                                                                                                        .getTitle()
+                                                                                        + " has expired.")
+                                                        .build());
+                }
+
+                if (!expiredReservations.isEmpty()) {
+
+                        reservationRepository.saveAll(
+                                        expiredReservations);
+                }
         }
-
-        if (!expiredReservations.isEmpty()) {
-
-            reservationRepository.saveAll(
-                    expiredReservations
-            );
-        }
-    }
 }

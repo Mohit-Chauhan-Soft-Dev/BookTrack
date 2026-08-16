@@ -10,6 +10,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 
 @RestController
 @RequestMapping("/api/v1/circulations")
@@ -19,35 +21,59 @@ public class CirculationController {
     private final CirculationService circulationService;
 
     @PostMapping("/borrow")
+    @PreAuthorize("""
+            hasAnyAuthority(
+                'ROLE_SUPER_ADMIN',
+                'ROLE_ADMIN',
+                'ROLE_LIBRARIAN',
+                'ROLE_ASSISTANT_LIBRARIAN'
+            )
+            """)
     public ResponseEntity<CirculationResponse> borrowBook(
             @Valid @RequestBody BorrowBookRequest request) {
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(
-                        circulationService.borrowBook(request)
-                );
+                        circulationService.borrowBook(request));
     }
 
     @PostMapping("/return")
+    @PreAuthorize("""
+            hasAnyAuthority(
+                'ROLE_SUPER_ADMIN',
+                'ROLE_ADMIN',
+                'ROLE_LIBRARIAN',
+                'ROLE_ASSISTANT_LIBRARIAN'
+            )
+            """)
     public ResponseEntity<CirculationResponse> returnBook(
             @Valid @RequestBody ReturnBookRequest request) {
 
         return ResponseEntity.ok(
-                circulationService.returnBook(request)
-        );
+                circulationService.returnBook(request));
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<CirculationResponse> getCirculationById(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            Authentication authentication) {
 
         return ResponseEntity.ok(
-                circulationService.getCirculationById(id)
-        );
+                circulationService.getCirculationById(
+                        id,
+                        authentication));
     }
 
     @GetMapping
+    @PreAuthorize("""
+            hasAnyAuthority(
+                'ROLE_SUPER_ADMIN',
+                'ROLE_ADMIN',
+                'ROLE_LIBRARIAN'
+            )
+            """)
     public ResponseEntity<PageResponse<CirculationResponse>> getAllCirculations(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
@@ -59,18 +85,18 @@ public class CirculationController {
                         page,
                         size,
                         sortBy,
-                        sortDirection
-                )
-        );
+                        sortDirection));
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PageResponse<CirculationResponse>> getCirculationsByUser(
             @PathVariable Long userId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDirection) {
+            @RequestParam(defaultValue = "desc") String sortDirection,
+            Authentication authentication) {
 
         return ResponseEntity.ok(
                 circulationService.getCirculationsByUser(
@@ -78,12 +104,18 @@ public class CirculationController {
                         page,
                         size,
                         sortBy,
-                        sortDirection
-                )
-        );
+                        sortDirection,
+                        authentication));
     }
 
     @GetMapping("/book-copy/{bookCopyId}")
+    @PreAuthorize("""
+            hasAnyAuthority(
+                'ROLE_SUPER_ADMIN',
+                'ROLE_ADMIN',
+                'ROLE_LIBRARIAN'
+            )
+            """)
     public ResponseEntity<PageResponse<CirculationResponse>> getCirculationsByBookCopy(
             @PathVariable Long bookCopyId,
             @RequestParam(defaultValue = "0") int page,
@@ -97,8 +129,6 @@ public class CirculationController {
                         page,
                         size,
                         sortBy,
-                        sortDirection
-                )
-        );
+                        sortDirection));
     }
 }

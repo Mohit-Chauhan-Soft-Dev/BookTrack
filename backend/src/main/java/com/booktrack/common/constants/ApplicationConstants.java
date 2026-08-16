@@ -25,6 +25,8 @@ public final class ApplicationConstants {
 
     public static final String INVENTORY = API_V1 + "/inventory";
 
+    public static final String NOTIFICATIONS = API_V1 + "/notifications";
+
     public static final String USERS = API_V1 + "/users";
 
     public static final String TOKEN_TYPE = "type";

@@ -6,17 +6,21 @@ import com.booktrack.reservation.dto.request.CreateReservationRequest;
 import com.booktrack.reservation.dto.response.ReservationResponse;
 import com.booktrack.reservation.dto.request.FulfillReservationRequest;
 import com.booktrack.reservation.dto.request.CompleteReservationRequest;
+import org.springframework.security.core.Authentication;
 
 public interface ReservationService {
 
         ReservationResponse createReservation(
-                        CreateReservationRequest request);
+                        CreateReservationRequest request,
+                        Authentication authentication);
 
         ReservationResponse cancelReservation(
-                        CancelReservationRequest request);
+                        CancelReservationRequest request,
+                        Authentication authentication);
 
         ReservationResponse getReservationById(
-                        Long id);
+                        Long id,
+                        Authentication authentication);
 
         PageResponse<ReservationResponse> getAllReservations(
                         int page,
@@ -29,7 +33,8 @@ public interface ReservationService {
                         int page,
                         int size,
                         String sortBy,
-                        String sortDirection);
+                        String sortDirection,
+                        Authentication authentication);
 
         PageResponse<ReservationResponse> getReservationsByBook(
                         Long bookId,

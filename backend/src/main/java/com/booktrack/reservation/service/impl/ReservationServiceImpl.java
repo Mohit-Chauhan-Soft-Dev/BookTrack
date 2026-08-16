@@ -24,6 +24,8 @@ import com.booktrack.circulation.dto.request.BorrowBookRequest;
 import com.booktrack.circulation.service.CirculationService;
 import com.booktrack.reservation.dto.request.FulfillReservationRequest;
 import com.booktrack.reservation.dto.request.CompleteReservationRequest;
+import org.springframework.security.core.Authentication;
+import com.booktrack.security.userdetails.CustomUserDetails;
 
 import java.time.LocalDateTime;
 
@@ -44,28 +46,18 @@ public class ReservationServiceImpl implements ReservationService {
 
         @Override
         public ReservationResponse createReservation(
-                        CreateReservationRequest request) {
+                        CreateReservationRequest request,
+                        Authentication authentication) {
 
-                /*
-                 * Temporary user resolution:
-                 *
-                 * Until we wire the authenticated user into the
-                 * reservation flow, use User #1 for our initial
-                 * development/testing flow.
-                 *
-                 * We will replace this with the authenticated user
-                 * once the reservation module's core flow is verified.
-                 */
-                Long userId = 1L;
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
-                User user = reservationValidator.validateUserExists(
-                                userId);
+                User user = userDetails.getUser();
 
                 Book book = reservationValidator.validateBookExists(
                                 request.getBookId());
 
                 reservationValidator.validateDuplicateReservation(
-                                userId,
+                                user.getId(),
                                 book.getId());
 
                 LocalDateTime now = LocalDateTime.now();
@@ -79,8 +71,7 @@ public class ReservationServiceImpl implements ReservationService {
                                 .notes(request.getNotes())
                                 .build();
 
-                Reservation savedReservation = reservationRepository.save(
-                                reservation);
+                Reservation savedReservation = reservationRepository.save(reservation);
 
                 return reservationMapper.toResponse(
                                 savedReservation);
@@ -88,10 +79,26 @@ public class ReservationServiceImpl implements ReservationService {
 
         @Override
         public ReservationResponse cancelReservation(
-                        CancelReservationRequest request) {
+                        CancelReservationRequest request,
+                        Authentication authentication) {
 
                 Reservation reservation = reservationValidator.validateReservationExists(
                                 request.getReservationId());
+
+                boolean privilegedUser = authentication.getAuthorities()
+                                .stream()
+                                .anyMatch(authority -> authority.getAuthority().equals("ROLE_SUPER_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_LIBRARIAN"));
+
+                boolean owner = reservation.getUser().getEmail()
+                                .equals(authentication.getName());
+
+                if (!privilegedUser && !owner) {
+
+                        throw new org.springframework.security.access.AccessDeniedException(
+                                        "You are not authorized to cancel this reservation.");
+                }
 
                 reservationValidator.validateCancellableReservation(
                                 reservation);
@@ -109,8 +116,7 @@ public class ReservationServiceImpl implements ReservationService {
                                         request.getNotes());
                 }
 
-                Reservation updatedReservation = reservationRepository.save(
-                                reservation);
+                Reservation updatedReservation = reservationRepository.save(reservation);
 
                 return reservationMapper.toResponse(
                                 updatedReservation);
@@ -193,13 +199,26 @@ public class ReservationServiceImpl implements ReservationService {
         @Override
         @Transactional(readOnly = true)
         public ReservationResponse getReservationById(
-                        Long id) {
+                        Long id,
+                        Authentication authentication) {
 
-                Reservation reservation = reservationValidator.validateReservationExists(
-                                id);
+                Reservation reservation = reservationValidator.validateReservationExists(id);
 
-                return reservationMapper.toResponse(
-                                reservation);
+                boolean privilegedUser = authentication.getAuthorities()
+                                .stream()
+                                .anyMatch(authority -> authority.getAuthority().equals("ROLE_SUPER_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_LIBRARIAN"));
+
+                boolean owner = reservation.getUser().getEmail()
+                                .equals(authentication.getName());
+
+                if (!privilegedUser && !owner) {
+                        throw new org.springframework.security.access.AccessDeniedException(
+                                        "You are not authorized to view this reservation.");
+                }
+
+                return reservationMapper.toResponse(reservation);
         }
 
         @Override
@@ -231,10 +250,25 @@ public class ReservationServiceImpl implements ReservationService {
                         int page,
                         int size,
                         String sortBy,
-                        String sortDirection) {
+                        String sortDirection,
+                        Authentication authentication) {
 
-                reservationValidator.validateUserExists(
-                                userId);
+                User requestedUser = reservationValidator.validateUserExists(userId);
+
+                boolean privilegedUser = authentication.getAuthorities()
+                                .stream()
+                                .anyMatch(authority -> authority.getAuthority().equals("ROLE_SUPER_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_ADMIN")
+                                                || authority.getAuthority().equals("ROLE_LIBRARIAN"));
+
+                boolean owner = requestedUser.getEmail()
+                                .equals(authentication.getName());
+
+                if (!privilegedUser && !owner) {
+
+                        throw new org.springframework.security.access.AccessDeniedException(
+                                        "You are not authorized to view this user's reservations.");
+                }
 
                 Pageable pageable = PageableUtils.createPageable(
                                 page,

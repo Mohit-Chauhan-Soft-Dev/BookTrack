@@ -10,6 +10,8 @@ import com.booktrack.reservation.service.ReservationService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import com.booktrack.reservation.dto.request.CompleteReservationRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,32 +25,51 @@ public class ReservationController {
         private final ReservationService reservationService;
 
         @PostMapping
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<ReservationResponse> createReservation(
-                        @Valid @RequestBody CreateReservationRequest request) {
+                        @Valid @RequestBody CreateReservationRequest request,
+                        Authentication authentication) {
 
                 return ResponseEntity
                                 .status(HttpStatus.CREATED)
                                 .body(
-                                                reservationService.createReservation(request));
+                                                reservationService.createReservation(
+                                                                request,
+                                                                authentication));
         }
 
         @PostMapping("/cancel")
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<ReservationResponse> cancelReservation(
-                        @Valid @RequestBody CancelReservationRequest request) {
+                        @Valid @RequestBody CancelReservationRequest request,
+                        Authentication authentication) {
 
                 return ResponseEntity.ok(
-                                reservationService.cancelReservation(request));
+                                reservationService.cancelReservation(
+                                                request,
+                                                authentication));
         }
 
         @GetMapping("/{id}")
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<ReservationResponse> getReservationById(
-                        @PathVariable Long id) {
+                        @PathVariable Long id,
+                        Authentication authentication) {
 
                 return ResponseEntity.ok(
-                                reservationService.getReservationById(id));
+                                reservationService.getReservationById(
+                                                id,
+                                                authentication));
         }
 
         @GetMapping
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_SUPER_ADMIN',
+                                'ROLE_ADMIN',
+                                'ROLE_LIBRARIAN'
+                        )
+                        """)
         public ResponseEntity<PageResponse<ReservationResponse>> getAllReservations(
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
@@ -64,12 +85,14 @@ public class ReservationController {
         }
 
         @GetMapping("/user/{userId}")
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<PageResponse<ReservationResponse>> getReservationsByUser(
                         @PathVariable Long userId,
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
                         @RequestParam(defaultValue = "createdAt") String sortBy,
-                        @RequestParam(defaultValue = "desc") String sortDirection) {
+                        @RequestParam(defaultValue = "desc") String sortDirection,
+                        Authentication authentication) {
 
                 return ResponseEntity.ok(
                                 reservationService.getReservationsByUser(
@@ -77,10 +100,18 @@ public class ReservationController {
                                                 page,
                                                 size,
                                                 sortBy,
-                                                sortDirection));
+                                                sortDirection,
+                                                authentication));
         }
 
         @GetMapping("/book/{bookId}")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_SUPER_ADMIN',
+                                'ROLE_ADMIN',
+                                'ROLE_LIBRARIAN'
+                        )
+                        """)
         public ResponseEntity<PageResponse<ReservationResponse>> getReservationsByBook(
                         @PathVariable Long bookId,
                         @RequestParam(defaultValue = "0") int page,
@@ -98,6 +129,13 @@ public class ReservationController {
         }
 
         @PostMapping("/fulfill")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_SUPER_ADMIN',
+                                'ROLE_ADMIN',
+                                'ROLE_LIBRARIAN'
+                        )
+                        """)
         public ResponseEntity<ReservationResponse> fulfillReservation(
                         @Valid @RequestBody FulfillReservationRequest request) {
 
@@ -106,6 +144,13 @@ public class ReservationController {
         }
 
         @PostMapping("/complete")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_SUPER_ADMIN',
+                                'ROLE_ADMIN',
+                                'ROLE_LIBRARIAN'
+                        )
+                        """)
         public ResponseEntity<ReservationResponse> completeReservation(
                         @Valid @RequestBody CompleteReservationRequest request) {
 

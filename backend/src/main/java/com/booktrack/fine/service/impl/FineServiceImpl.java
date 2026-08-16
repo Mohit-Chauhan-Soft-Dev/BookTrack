@@ -16,12 +16,18 @@ import com.booktrack.fine.validator.FineValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.booktrack.exception.ForbiddenException;
 import com.booktrack.exception.ResourceNotFoundException;
 import com.booktrack.notification.dto.request.CreateNotificationRequest;
 import com.booktrack.notification.enums.NotificationType;
 import com.booktrack.notification.service.NotificationService;
+import com.booktrack.role.enums.RoleName;
+import com.booktrack.security.userdetails.CustomUserDetails;
+import com.booktrack.user.entity.User;
 
 import java.time.LocalDateTime;
 
@@ -81,10 +87,29 @@ public class FineServiceImpl implements FineService {
 
         @Override
         public FineResponse payFine(
-                        PayFineRequest request) {
+                        PayFineRequest request,
+                        Authentication authentication) {
 
                 Fine fine = fineValidator.validateFineExists(
                                 request.getFineId());
+
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+                User authenticatedUser = userDetails.getUser();
+
+                boolean isStaff = authenticatedUser.getRoles()
+                                .stream()
+                                .anyMatch(role -> role.getName() == RoleName.ROLE_LIBRARIAN
+                                                || role.getName() == RoleName.ROLE_ADMIN
+                                                || role.getName() == RoleName.ROLE_SUPER_ADMIN);
+
+                boolean isOwner = authenticatedUser.getId()
+                                .equals(fine.getCirculation().getUser().getId());
+
+                if (!isStaff && !isOwner) {
+                        throw new ForbiddenException(
+                                        "You are not authorized to pay this fine.");
+                }
 
                 fineValidator.validatePayableFine(fine);
 
@@ -125,9 +150,28 @@ public class FineServiceImpl implements FineService {
         @Override
         @Transactional(readOnly = true)
         public FineResponse getFineById(
-                        Long id) {
+                        Long id,
+                        Authentication authentication) {
 
                 Fine fine = fineValidator.validateFineExists(id);
+
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+                User authenticatedUser = userDetails.getUser();
+
+                boolean isStaff = authenticatedUser.getRoles()
+                                .stream()
+                                .anyMatch(role -> role.getName() == RoleName.ROLE_LIBRARIAN
+                                                || role.getName() == RoleName.ROLE_ADMIN
+                                                || role.getName() == RoleName.ROLE_SUPER_ADMIN);
+
+                boolean isOwner = authenticatedUser.getId()
+                                .equals(fine.getCirculation().getUser().getId());
+
+                if (!isStaff && !isOwner) {
+                        throw new ForbiddenException(
+                                        "You are not authorized to view this fine.");
+                }
 
                 return fineMapper.toResponse(fine);
         }
@@ -135,13 +179,34 @@ public class FineServiceImpl implements FineService {
         @Override
         @Transactional(readOnly = true)
         public FineResponse getFineByCirculation(
-                        Long circulationId) {
+                        Long circulationId,
+                        Authentication authentication) {
 
                 Fine fine = fineRepository.findByCirculationId(
                                 circulationId)
                                 .orElseThrow(() -> new ResourceNotFoundException(
                                                 "Fine not found for circulation: "
                                                                 + circulationId));
+
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+                User authenticatedUser = userDetails.getUser();
+
+                boolean isStaff = authenticatedUser.getRoles()
+                                .stream()
+                                .anyMatch(role -> role.getName() == RoleName.ROLE_LIBRARIAN
+                                                || role.getName() == RoleName.ROLE_ADMIN
+                                                || role.getName() == RoleName.ROLE_SUPER_ADMIN);
+
+                boolean isOwner = authenticatedUser.getId()
+                                .equals(fine.getCirculation()
+                                                .getUser()
+                                                .getId());
+
+                if (!isStaff && !isOwner) {
+                        throw new ForbiddenException(
+                                        "You are not authorized to view this fine.");
+                }
 
                 return fineMapper.toResponse(fine);
         }
@@ -175,7 +240,25 @@ public class FineServiceImpl implements FineService {
                         int page,
                         int size,
                         String sortBy,
-                        String sortDirection) {
+                        String sortDirection,
+                        Authentication authentication) {
+
+                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+
+                User authenticatedUser = userDetails.getUser();
+
+                boolean isStaff = authenticatedUser.getRoles()
+                                .stream()
+                                .anyMatch(role -> role.getName() == RoleName.ROLE_LIBRARIAN
+                                                || role.getName() == RoleName.ROLE_ADMIN
+                                                || role.getName() == RoleName.ROLE_SUPER_ADMIN);
+
+                boolean isOwner = authenticatedUser.getId().equals(userId);
+
+                if (!isStaff && !isOwner) {
+                        throw new ForbiddenException(
+                                        "You are not authorized to view these fines.");
+                }
 
                 Pageable pageable = PageableUtils.createPageable(
                                 page,

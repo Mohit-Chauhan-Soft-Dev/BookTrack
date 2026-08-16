@@ -12,6 +12,7 @@ import com.booktrack.notification.mapper.NotificationMapper;
 import com.booktrack.notification.repository.NotificationRepository;
 import com.booktrack.notification.service.NotificationService;
 import com.booktrack.notification.validator.NotificationValidator;
+import com.booktrack.role.enums.RoleName;
 import com.booktrack.security.userdetails.CustomUserDetails;
 import com.booktrack.user.entity.User;
 import lombok.RequiredArgsConstructor;
@@ -217,9 +218,8 @@ public class NotificationServiceImpl
 
                 boolean isAdmin = authenticatedUser.getRoles()
                                 .stream()
-                                .anyMatch(role -> role.getName().name().equals("ROLE_ADMIN")
-                                                || role.getName().name()
-                                                                .equals("ROLE_SUPER_ADMIN"));
+                                .anyMatch(role -> role.getName() == RoleName.ROLE_ADMIN
+                                                || role.getName() == RoleName.ROLE_SUPER_ADMIN);
 
                 boolean isOwner = notification.getUser().getId()
                                 .equals(authenticatedUser.getId());

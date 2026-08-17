@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -17,83 +18,79 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class InventoryController {
 
-    private final InventoryService inventoryService;
+        private final InventoryService inventoryService;
 
-    @PostMapping
-    public ResponseEntity<InventoryTransactionResponse> createTransaction(
-            @Valid @RequestBody CreateInventoryTransactionRequest request) {
+        @PostMapping
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_LIBRARIAN',
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<InventoryTransactionResponse> createTransaction(
+                        @Valid @RequestBody CreateInventoryTransactionRequest request) {
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(
-                        inventoryService.createTransaction(request)
-                );
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(
+                                                inventoryService.createTransaction(request));
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<InventoryTransactionResponse> getTransactionById(
-            @PathVariable Long id) {
+        @GetMapping("/{id}")
+        public ResponseEntity<InventoryTransactionResponse> getTransactionById(
+                        @PathVariable Long id) {
 
-        return ResponseEntity.ok(
-                inventoryService.getTransactionById(id)
-        );
-    }
+                return ResponseEntity.ok(
+                                inventoryService.getTransactionById(id));
+        }
 
-    @GetMapping
-    public ResponseEntity<PageResponse<InventoryTransactionResponse>>
-    getAllTransactions(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDirection) {
+        @GetMapping
+        public ResponseEntity<PageResponse<InventoryTransactionResponse>> getAllTransactions(
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "createdAt") String sortBy,
+                        @RequestParam(defaultValue = "desc") String sortDirection) {
 
-        return ResponseEntity.ok(
-                inventoryService.getAllTransactions(
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                inventoryService.getAllTransactions(
+                                                page,
+                                                size,
+                                                sortBy,
+                                                sortDirection));
+        }
 
-    @GetMapping("/book-copy/{bookCopyId}")
-    public ResponseEntity<PageResponse<InventoryTransactionResponse>>
-    getTransactionsByBookCopy(
-            @PathVariable Long bookCopyId,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDirection) {
+        @GetMapping("/book-copy/{bookCopyId}")
+        public ResponseEntity<PageResponse<InventoryTransactionResponse>> getTransactionsByBookCopy(
+                        @PathVariable Long bookCopyId,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "createdAt") String sortBy,
+                        @RequestParam(defaultValue = "desc") String sortDirection) {
 
-        return ResponseEntity.ok(
-                inventoryService.getTransactionsByBookCopy(
-                        bookCopyId,
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                inventoryService.getTransactionsByBookCopy(
+                                                bookCopyId,
+                                                page,
+                                                size,
+                                                sortBy,
+                                                sortDirection));
+        }
 
-    @GetMapping("/type/{type}")
-    public ResponseEntity<PageResponse<InventoryTransactionResponse>>
-    getTransactionsByType(
-            @PathVariable InventoryTransactionType type,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
-            @RequestParam(defaultValue = "createdAt") String sortBy,
-            @RequestParam(defaultValue = "desc") String sortDirection) {
+        @GetMapping("/type/{type}")
+        public ResponseEntity<PageResponse<InventoryTransactionResponse>> getTransactionsByType(
+                        @PathVariable InventoryTransactionType type,
+                        @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "createdAt") String sortBy,
+                        @RequestParam(defaultValue = "desc") String sortDirection) {
 
-        return ResponseEntity.ok(
-                inventoryService.getTransactionsByType(
-                        type,
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                inventoryService.getTransactionsByType(
+                                                type,
+                                                page,
+                                                size,
+                                                sortBy,
+                                                sortDirection));
+        }
 }

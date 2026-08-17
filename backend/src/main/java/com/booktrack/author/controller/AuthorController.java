@@ -12,75 +12,91 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping(ApplicationConstants.AUTHORS)
 @RequiredArgsConstructor
 public class AuthorController {
 
-    private final AuthorService authorService;
+        private final AuthorService authorService;
 
-    @PostMapping
-    public ResponseEntity<AuthorResponse> createAuthor(
-            @Valid @RequestBody CreateAuthorRequest request) {
+        @PostMapping
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_LIBRARIAN',
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<AuthorResponse> createAuthor(
+                        @Valid @RequestBody CreateAuthorRequest request) {
 
-        AuthorResponse response =
-                authorService.createAuthor(request);
+                AuthorResponse response = authorService.createAuthor(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(response);
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<AuthorResponse> getAuthorById(
-            @PathVariable Long id) {
+        @GetMapping("/{id}")
+        public ResponseEntity<AuthorResponse> getAuthorById(
+                        @PathVariable Long id) {
 
-        return ResponseEntity.ok(
-                authorService.getAuthorById(id)
-        );
-    }
+                return ResponseEntity.ok(
+                                authorService.getAuthorById(id));
+        }
 
-    @GetMapping
-    public ResponseEntity<PageResponse<AuthorResponse>> getAllAuthors(
+        @GetMapping
+        public ResponseEntity<PageResponse<AuthorResponse>> getAllAuthors(
 
-            @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "0") int page,
 
-            @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "10") int size,
 
-            @RequestParam(defaultValue = "firstName") String sortBy,
+                        @RequestParam(defaultValue = "firstName") String sortBy,
 
-            @RequestParam(defaultValue = "asc") String sortDirection) {
+                        @RequestParam(defaultValue = "asc") String sortDirection) {
 
-        return ResponseEntity.ok(
-                authorService.getAllAuthors(
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                authorService.getAllAuthors(
+                                                page,
+                                                size,
+                                                sortBy,
+                                                sortDirection));
+        }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<AuthorResponse> updateAuthor(
+        @PutMapping("/{id}")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_LIBRARIAN',
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<AuthorResponse> updateAuthor(
 
-            @PathVariable Long id,
+                        @PathVariable Long id,
 
-            @Valid @RequestBody UpdateAuthorRequest request) {
+                        @Valid @RequestBody UpdateAuthorRequest request) {
 
-        return ResponseEntity.ok(
-                authorService.updateAuthor(id, request)
-        );
-    }
+                return ResponseEntity.ok(
+                                authorService.updateAuthor(id, request));
+        }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteAuthor(
-            @PathVariable Long id) {
+        @DeleteMapping("/{id}")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<Void> deleteAuthor(
+                        @PathVariable Long id) {
 
-        authorService.deleteAuthor(id);
+                authorService.deleteAuthor(id);
 
-        return ResponseEntity.noContent().build();
-    }
+                return ResponseEntity.noContent().build();
+        }
 
 }

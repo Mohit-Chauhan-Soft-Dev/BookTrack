@@ -53,16 +53,4 @@ public class BookValidator {
                 });
     }
 
-    // public void validateAvailableCopies(
-    //         Integer totalCopies,
-    //         Integer availableCopies) {
-
-    //     if (availableCopies > totalCopies) {
-
-    //         throw new BadRequestException(
-    //                 "Available copies cannot be greater than total copies."
-    //         );
-    //     }
-    // }
-
 }

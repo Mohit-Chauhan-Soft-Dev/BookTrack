@@ -11,83 +11,93 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping(ApplicationConstants.PUBLISHERS)
 @RequiredArgsConstructor
 public class PublisherController {
 
-    private final PublisherService publisherService;
+        private final PublisherService publisherService;
 
-    @PostMapping
-    public ResponseEntity<PublisherResponse> createPublisher(
-            @Valid @RequestBody CreatePublisherRequest request) {
+        @PostMapping
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_LIBRARIAN',
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<PublisherResponse> createPublisher(
+                        @Valid @RequestBody CreatePublisherRequest request) {
 
-        PublisherResponse response =
-                publisherService.createPublisher(request);
+                PublisherResponse response = publisherService.createPublisher(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(response);
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<PublisherResponse> getPublisherById(
-            @PathVariable Long id) {
+        @GetMapping("/{id}")
+        public ResponseEntity<PublisherResponse> getPublisherById(
+                        @PathVariable Long id) {
 
-        return ResponseEntity.ok(
-                publisherService.getPublisherById(id)
-        );
-    }
+                return ResponseEntity.ok(
+                                publisherService.getPublisherById(id));
+        }
 
-    @GetMapping
-    public ResponseEntity<PageResponse<PublisherResponse>> getAllPublishers(
+        @GetMapping
+        public ResponseEntity<PageResponse<PublisherResponse>> getAllPublishers(
 
-            @RequestParam(defaultValue = "0")
-            int page,
+                        @RequestParam(defaultValue = "0") int page,
 
-            @RequestParam(defaultValue = "10")
-            int size,
+                        @RequestParam(defaultValue = "10") int size,
 
-            @RequestParam(defaultValue = "name")
-            String sortBy,
+                        @RequestParam(defaultValue = "name") String sortBy,
 
-            @RequestParam(defaultValue = "asc")
-            String sortDirection) {
+                        @RequestParam(defaultValue = "asc") String sortDirection) {
 
-        return ResponseEntity.ok(
-                publisherService.getAllPublishers(
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                publisherService.getAllPublishers(
+                                                page,
+                                                size,
+                                                sortBy,
+                                                sortDirection));
+        }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<PublisherResponse> updatePublisher(
+        @PutMapping("/{id}")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_LIBRARIAN',
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<PublisherResponse> updatePublisher(
 
-            @PathVariable Long id,
+                        @PathVariable Long id,
 
-            @Valid
-            @RequestBody UpdatePublisherRequest request) {
+                        @Valid @RequestBody UpdatePublisherRequest request) {
 
-        return ResponseEntity.ok(
-                publisherService.updatePublisher(
-                        id,
-                        request
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                publisherService.updatePublisher(
+                                                id,
+                                                request));
+        }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletePublisher(
-            @PathVariable Long id) {
+        @DeleteMapping("/{id}")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<Void> deletePublisher(
+                        @PathVariable Long id) {
 
-        publisherService.deletePublisher(id);
+                publisherService.deletePublisher(id);
 
-        return ResponseEntity.noContent().build();
-    }
+                return ResponseEntity.noContent().build();
+        }
 
 }

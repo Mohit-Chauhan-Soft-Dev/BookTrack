@@ -12,75 +12,91 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping(ApplicationConstants.CATEGORIES)
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final CategoryService categoryService;
+        private final CategoryService categoryService;
 
-    @PostMapping
-    public ResponseEntity<CategoryResponse> createCategory(
-            @Valid @RequestBody CreateCategoryRequest request) {
+        @PostMapping
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_LIBRARIAN',
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<CategoryResponse> createCategory(
+                        @Valid @RequestBody CreateCategoryRequest request) {
 
-        CategoryResponse response =
-                categoryService.createCategory(request);
+                CategoryResponse response = categoryService.createCategory(request);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(response);
-    }
+                return ResponseEntity
+                                .status(HttpStatus.CREATED)
+                                .body(response);
+        }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<CategoryResponse> getCategoryById(
-            @PathVariable Long id) {
+        @GetMapping("/{id}")
+        public ResponseEntity<CategoryResponse> getCategoryById(
+                        @PathVariable Long id) {
 
-        return ResponseEntity.ok(
-                categoryService.getCategoryById(id)
-        );
-    }
+                return ResponseEntity.ok(
+                                categoryService.getCategoryById(id));
+        }
 
-    @GetMapping
-    public ResponseEntity<PageResponse<CategoryResponse>> getAllCategories(
+        @GetMapping
+        public ResponseEntity<PageResponse<CategoryResponse>> getAllCategories(
 
-            @RequestParam(defaultValue = "0") int page,
+                        @RequestParam(defaultValue = "0") int page,
 
-            @RequestParam(defaultValue = "10") int size,
+                        @RequestParam(defaultValue = "10") int size,
 
-            @RequestParam(defaultValue = "name") String sortBy,
+                        @RequestParam(defaultValue = "name") String sortBy,
 
-            @RequestParam(defaultValue = "asc") String sortDirection) {
+                        @RequestParam(defaultValue = "asc") String sortDirection) {
 
-        return ResponseEntity.ok(
-                categoryService.getAllCategories(
-                        page,
-                        size,
-                        sortBy,
-                        sortDirection
-                )
-        );
-    }
+                return ResponseEntity.ok(
+                                categoryService.getAllCategories(
+                                                page,
+                                                size,
+                                                sortBy,
+                                                sortDirection));
+        }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<CategoryResponse> updateCategory(
+        @PutMapping("/{id}")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_LIBRARIAN',
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<CategoryResponse> updateCategory(
 
-            @PathVariable Long id,
+                        @PathVariable Long id,
 
-            @Valid @RequestBody UpdateCategoryRequest request) {
+                        @Valid @RequestBody UpdateCategoryRequest request) {
 
-        return ResponseEntity.ok(
-                categoryService.updateCategory(id, request)
-        );
-    }
+                return ResponseEntity.ok(
+                                categoryService.updateCategory(id, request));
+        }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteCategory(
-            @PathVariable Long id) {
+        @DeleteMapping("/{id}")
+        @PreAuthorize("""
+                        hasAnyAuthority(
+                                'ROLE_ADMIN',
+                                'ROLE_SUPER_ADMIN'
+                        )
+                        """)
+        public ResponseEntity<Void> deleteCategory(
+                        @PathVariable Long id) {
 
-        categoryService.deleteCategory(id);
+                categoryService.deleteCategory(id);
 
-        return ResponseEntity.noContent().build();
-    }
+                return ResponseEntity.noContent().build();
+        }
 
 }

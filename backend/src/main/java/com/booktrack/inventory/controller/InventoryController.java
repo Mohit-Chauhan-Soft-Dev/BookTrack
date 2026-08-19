@@ -38,6 +38,7 @@ public class InventoryController {
         }
 
         @GetMapping("/{id}")
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<InventoryTransactionResponse> getTransactionById(
                         @PathVariable Long id) {
 
@@ -46,6 +47,7 @@ public class InventoryController {
         }
 
         @GetMapping
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<PageResponse<InventoryTransactionResponse>> getAllTransactions(
                         @RequestParam(defaultValue = "0") int page,
                         @RequestParam(defaultValue = "10") int size,
@@ -61,6 +63,7 @@ public class InventoryController {
         }
 
         @GetMapping("/book-copy/{bookCopyId}")
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<PageResponse<InventoryTransactionResponse>> getTransactionsByBookCopy(
                         @PathVariable Long bookCopyId,
                         @RequestParam(defaultValue = "0") int page,
@@ -78,6 +81,7 @@ public class InventoryController {
         }
 
         @GetMapping("/type/{type}")
+        @PreAuthorize("isAuthenticated()")
         public ResponseEntity<PageResponse<InventoryTransactionResponse>> getTransactionsByType(
                         @PathVariable InventoryTransactionType type,
                         @RequestParam(defaultValue = "0") int page,

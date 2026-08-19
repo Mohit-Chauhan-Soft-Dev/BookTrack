@@ -20,199 +20,199 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class NotificationController {
 
-        private final NotificationService notificationService;
+    private final NotificationService notificationService;
 
-        @PostMapping
-        @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-        public ResponseEntity<NotificationResponse> createNotification(
-                        @Valid @RequestBody CreateNotificationRequest request) {
+    @PostMapping
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<NotificationResponse> createNotification(
+            @Valid @RequestBody CreateNotificationRequest request) {
 
-                return ResponseEntity
-                                .status(HttpStatus.CREATED)
-                                .body(
-                                                notificationService.createNotification(
-                                                                request));
-        }
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(
+                        notificationService.createNotification(
+                                request));
+    }
 
-        @GetMapping("/{id}")
-        @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<NotificationResponse> getNotificationById(
-                        @PathVariable Long id,
-                        Authentication authentication) {
+    @GetMapping("/{id}")
+    public ResponseEntity<NotificationResponse> getNotificationById(
+            @PathVariable Long id,
+            Authentication authentication) {
 
-                return ResponseEntity.ok(
-                                notificationService.getNotificationById(
-                                                id,
-                                                authentication));
-        }
+        return ResponseEntity.ok(
+                notificationService.getNotificationById(
+                        id,
+                        authentication));
+    }
 
-        @GetMapping("/my")
-        @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<PageResponse<NotificationResponse>> getMyNotifications(
-                        Authentication authentication,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size,
-                        @RequestParam(defaultValue = "createdAt") String sortBy,
-                        @RequestParam(defaultValue = "desc") String sortDirection) {
+    @GetMapping("/my")
+    public ResponseEntity<PageResponse<NotificationResponse>>
+    getMyNotifications(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
 
-                Long userId = getAuthenticatedUserId(authentication);
+        Long userId = getAuthenticatedUserId(authentication);
 
-                return ResponseEntity.ok(
-                                notificationService.getNotificationsByUser(
-                                                userId,
-                                                page,
-                                                size,
-                                                sortBy,
-                                                sortDirection));
-        }
+        return ResponseEntity.ok(
+                notificationService.getNotificationsByUser(
+                        userId,
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection));
+    }
 
-        @GetMapping("/my/unread")
-        @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<PageResponse<NotificationResponse>> getMyUnreadNotifications(
-                        Authentication authentication,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size,
-                        @RequestParam(defaultValue = "createdAt") String sortBy,
-                        @RequestParam(defaultValue = "desc") String sortDirection) {
+    @GetMapping("/my/unread")
+    public ResponseEntity<PageResponse<NotificationResponse>>
+    getMyUnreadNotifications(
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
 
-                Long userId = getAuthenticatedUserId(authentication);
+        Long userId = getAuthenticatedUserId(authentication);
 
-                return ResponseEntity.ok(
-                                notificationService.getUnreadNotificationsByUser(
-                                                userId,
-                                                page,
-                                                size,
-                                                sortBy,
-                                                sortDirection));
-        }
+        return ResponseEntity.ok(
+                notificationService.getUnreadNotificationsByUser(
+                        userId,
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection));
+    }
 
-        @GetMapping("/my/type/{type}")
-        @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<PageResponse<NotificationResponse>> getMyNotificationsByType(
-                        @PathVariable NotificationType type,
-                        Authentication authentication,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size,
-                        @RequestParam(defaultValue = "createdAt") String sortBy,
-                        @RequestParam(defaultValue = "desc") String sortDirection) {
+    @GetMapping("/my/type/{type}")
+    public ResponseEntity<PageResponse<NotificationResponse>>
+    getMyNotificationsByType(
+            @PathVariable NotificationType type,
+            Authentication authentication,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
 
-                Long userId = getAuthenticatedUserId(authentication);
+        Long userId = getAuthenticatedUserId(authentication);
 
-                return ResponseEntity.ok(
-                                notificationService.getNotificationsByUserAndType(
-                                                userId,
-                                                type,
-                                                page,
-                                                size,
-                                                sortBy,
-                                                sortDirection));
-        }
+        return ResponseEntity.ok(
+                notificationService.getNotificationsByUserAndType(
+                        userId,
+                        type,
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection));
+    }
 
-        @GetMapping("/my/unread-count")
-        @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<Long> getMyUnreadCount(
-                        Authentication authentication) {
+    @GetMapping("/my/unread-count")
+    public ResponseEntity<Long> getMyUnreadCount(
+            Authentication authentication) {
 
-                Long userId = getAuthenticatedUserId(authentication);
+        Long userId = getAuthenticatedUserId(authentication);
 
-                return ResponseEntity.ok(
-                                notificationService.getUnreadCount(userId));
-        }
+        return ResponseEntity.ok(
+                notificationService.getUnreadCount(userId));
+    }
 
-        @PatchMapping("/{id}/read")
-        @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<NotificationResponse> markAsRead(
-                        @PathVariable Long id,
-                        Authentication authentication) {
+    @PatchMapping("/{id}/read")
+    public ResponseEntity<NotificationResponse> markAsRead(
+            @PathVariable Long id,
+            Authentication authentication) {
 
-                return ResponseEntity.ok(
-                                notificationService.markAsRead(
-                                                id,
-                                                authentication));
-        }
+        return ResponseEntity.ok(
+                notificationService.markAsRead(
+                        id,
+                        authentication));
+    }
 
-        @PatchMapping("/my/read-all")
-        @PreAuthorize("isAuthenticated()")
-        public ResponseEntity<Void> markMyNotificationsAsRead(
-                        Authentication authentication) {
+    @PatchMapping("/my/read-all")
+    public ResponseEntity<Void> markMyNotificationsAsRead(
+            Authentication authentication) {
 
-                Long userId = getAuthenticatedUserId(authentication);
+        Long userId = getAuthenticatedUserId(authentication);
 
-                notificationService.markAllAsRead(userId);
+        notificationService.markAllAsRead(userId);
 
-                return ResponseEntity.noContent().build();
-        }
+        return ResponseEntity.noContent().build();
+    }
 
-        @GetMapping("/user/{userId}")
-        @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-        public ResponseEntity<PageResponse<NotificationResponse>> getNotificationsByUser(
-                        @PathVariable Long userId,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size,
-                        @RequestParam(defaultValue = "createdAt") String sortBy,
-                        @RequestParam(defaultValue = "desc") String sortDirection) {
+    @GetMapping("/user/{userId}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PageResponse<NotificationResponse>>
+    getNotificationsByUser(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
 
-                return ResponseEntity.ok(
-                                notificationService.getNotificationsByUser(
-                                                userId,
-                                                page,
-                                                size,
-                                                sortBy,
-                                                sortDirection));
-        }
+        return ResponseEntity.ok(
+                notificationService.getNotificationsByUser(
+                        userId,
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection));
+    }
 
-        @GetMapping("/user/{userId}/unread")
-        @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-        public ResponseEntity<PageResponse<NotificationResponse>> getUnreadNotificationsByUser(
-                        @PathVariable Long userId,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size,
-                        @RequestParam(defaultValue = "createdAt") String sortBy,
-                        @RequestParam(defaultValue = "desc") String sortDirection) {
+    @GetMapping("/user/{userId}/unread")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PageResponse<NotificationResponse>>
+    getUnreadNotificationsByUser(
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
 
-                return ResponseEntity.ok(
-                                notificationService.getUnreadNotificationsByUser(
-                                                userId,
-                                                page,
-                                                size,
-                                                sortBy,
-                                                sortDirection));
-        }
+        return ResponseEntity.ok(
+                notificationService.getUnreadNotificationsByUser(
+                        userId,
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection));
+    }
 
-        @GetMapping("/user/{userId}/type/{type}")
-        @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-        public ResponseEntity<PageResponse<NotificationResponse>> getNotificationsByUserAndType(
-                        @PathVariable Long userId,
-                        @PathVariable NotificationType type,
-                        @RequestParam(defaultValue = "0") int page,
-                        @RequestParam(defaultValue = "10") int size,
-                        @RequestParam(defaultValue = "createdAt") String sortBy,
-                        @RequestParam(defaultValue = "desc") String sortDirection) {
+    @GetMapping("/user/{userId}/type/{type}")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<PageResponse<NotificationResponse>>
+    getNotificationsByUserAndType(
+            @PathVariable Long userId,
+            @PathVariable NotificationType type,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
 
-                return ResponseEntity.ok(
-                                notificationService.getNotificationsByUserAndType(
-                                                userId,
-                                                type,
-                                                page,
-                                                size,
-                                                sortBy,
-                                                sortDirection));
-        }
+        return ResponseEntity.ok(
+                notificationService.getNotificationsByUserAndType(
+                        userId,
+                        type,
+                        page,
+                        size,
+                        sortBy,
+                        sortDirection));
+    }
 
-        @GetMapping("/user/{userId}/unread-count")
-        @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
-        public ResponseEntity<Long> getUnreadCount(
-                        @PathVariable Long userId) {
+    @GetMapping("/user/{userId}/unread-count")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_SUPER_ADMIN')")
+    public ResponseEntity<Long> getUnreadCount(
+            @PathVariable Long userId) {
 
-                return ResponseEntity.ok(
-                                notificationService.getUnreadCount(userId));
-        }
+        return ResponseEntity.ok(
+                notificationService.getUnreadCount(userId));
+    }
 
-        private Long getAuthenticatedUserId(
-                        Authentication authentication) {
+    private Long getAuthenticatedUserId(
+            Authentication authentication) {
 
-                CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
+        CustomUserDetails userDetails =
+                (CustomUserDetails) authentication.getPrincipal();
 
-                return userDetails.getUser().getId();
-        }
+        return userDetails.getUser().getId();
+    }
 }

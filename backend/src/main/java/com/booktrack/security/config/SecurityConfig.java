@@ -1,6 +1,5 @@
 package com.booktrack.security.config;
 
-import com.booktrack.security.jwt.JwtAuthenticationFilter;
 import com.booktrack.security.service.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +15,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.booktrack.security.handler.RestAuthenticationEntryPoint;
+import com.booktrack.security.jwt.JwtAuthenticationFilter;
+
 @Configuration
 @EnableMethodSecurity
 @RequiredArgsConstructor
@@ -24,6 +26,7 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final PasswordEncoder passwordEncoder;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final RestAuthenticationEntryPoint authenticationEntryPoint;
 
     @Bean
     public AuthenticationProvider authenticationProvider() {
@@ -49,21 +52,20 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(
+                        SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/**",
-
                                 "/v3/api-docs/**",
-
                                 "/swagger-ui/**",
-
                                 "/swagger-ui.html",
-
                                 "/error")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(authenticationEntryPoint))
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(
                         jwtAuthenticationFilter,

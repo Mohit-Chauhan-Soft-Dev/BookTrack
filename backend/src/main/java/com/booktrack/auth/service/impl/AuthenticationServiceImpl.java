@@ -7,6 +7,7 @@ import com.booktrack.auth.dto.response.JwtResponse;
 import com.booktrack.auth.dto.response.RefreshTokenResponse;
 import com.booktrack.auth.repository.RefreshTokenRepository;
 import com.booktrack.auth.service.AuthenticationService;
+import com.booktrack.auth.service.RefreshTokenSecurityService;
 import com.booktrack.exception.DuplicateResourceException;
 import com.booktrack.exception.ResourceNotFoundException;
 import com.booktrack.role.repository.RoleRepository;
@@ -33,6 +34,7 @@ import com.booktrack.exception.BadRequestException;
 import java.time.LocalDateTime;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -46,6 +48,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
+    private final RefreshTokenSecurityService refreshTokenSecurityService;
 
     @Override
     public void register(RegisterRequest request) {
@@ -91,18 +94,24 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
         refreshTokenRepository.deleteByUser(user);
 
+        String tokenFamily = UUID.randomUUID().toString();
+
         RefreshToken refreshToken = RefreshToken.builder()
-                .token(refreshTokenValue)
-                .expiryDate(LocalDateTime.now().plusSeconds(jwtProperties.refreshTokenExpiration() / 1000))
-                .user(user)
-                .build();
+                        .token(refreshTokenValue)
+                        .expiryDate(LocalDateTime.now().plusSeconds(
+                                        jwtProperties.refreshTokenExpiration() / 1000))
+                        .revoked(false)
+                        .tokenFamily(tokenFamily)
+                        .user(user)
+                        .build();
+
 
         refreshTokenRepository.save(refreshToken);
 
         return JwtResponse.builder()
                 .accessToken(accessToken)
                 .refreshToken(refreshTokenValue)
-                .expiresIn(900L)
+                .expiresIn(jwtProperties.accessTokenExpiration() / 1000)
                 .userId(user.getId())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
@@ -118,25 +127,76 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     @Override
     public RefreshTokenResponse refreshToken(RefreshTokenRequest request) {
 
-        RefreshToken refreshToken = refreshTokenRepository
-                .findByToken(request.getRefreshToken())
-                .orElseThrow(() -> new ResourceNotFoundException("Refresh token not found."));
+            RefreshToken currentToken = refreshTokenRepository
+                            .findByToken(request.getRefreshToken())
+                            .orElseThrow(() -> new ResourceNotFoundException(
+                                            "Refresh token not found."));
 
-        if (refreshToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            if (currentToken.isRevoked()) {
 
-            refreshTokenRepository.delete(refreshToken);
+                    refreshTokenSecurityService.revokeTokenFamily(
+                                    currentToken.getTokenFamily());
 
-            throw new BadRequestException("Refresh token has expired.");
-        }
+                    throw new BadRequestException(
+                                    "Refresh token has already been used.");
+            }
 
-        CustomUserDetails userDetails = new CustomUserDetails(refreshToken.getUser());
+            if (currentToken.getExpiryDate()
+                            .isBefore(LocalDateTime.now())) {
 
-        String newAccessToken = jwtService.generateAccessToken(userDetails);
+                    throw new BadRequestException(
+                                    "Refresh token has expired.");
+            }
 
-        return RefreshTokenResponse.builder()
-                .accessToken(newAccessToken)
-                .refreshToken(refreshToken.getToken())
-                .build();
+            User user = currentToken.getUser();
+
+            if (!user.isEnabled()
+                            || !user.isAccountNonLocked()
+                            || !user.isAccountNonExpired()
+                            || !user.isCredentialsNonExpired()) {
+
+                    throw new BadRequestException(
+                                    "User account is not available.");
+            }
+
+            int revokedRows = refreshTokenRepository.revokeIfActive(
+                            currentToken.getId());
+
+            if (revokedRows != 1) {
+
+                    refreshTokenRepository.revokeActiveFamily(
+                                    currentToken.getTokenFamily());
+
+                    throw new BadRequestException(
+                                    "Refresh token has already been used.");
+            }
+
+            CustomUserDetails userDetails = new CustomUserDetails(user);
+
+            String newAccessToken = jwtService.generateAccessToken(userDetails);
+
+            String newRefreshToken = jwtService.generateRefreshToken(userDetails);
+
+            String tokenFamily = currentToken.getTokenFamily();
+
+            RefreshToken rotatedToken = RefreshToken.builder()
+                            .token(newRefreshToken)
+                            .expiryDate(
+                                            LocalDateTime.now().plusSeconds(
+                                                            jwtProperties
+                                                                            .refreshTokenExpiration()
+                                                                            / 1000))
+                            .revoked(false)
+                            .tokenFamily(tokenFamily)
+                            .user(user)
+                            .build();
+
+            refreshTokenRepository.save(rotatedToken);
+
+            return RefreshTokenResponse.builder()
+                            .accessToken(newAccessToken)
+                            .refreshToken(newRefreshToken)
+                            .build();
     }
 
     @Override

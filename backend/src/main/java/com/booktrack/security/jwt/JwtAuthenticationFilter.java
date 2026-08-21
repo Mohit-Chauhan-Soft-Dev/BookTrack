@@ -56,6 +56,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 UserDetails userDetails =
                         customUserDetailsService.loadUserByUsername(username);
 
+                        if (!userDetails.isEnabled()
+                        || !userDetails.isAccountNonLocked()
+                        || !userDetails.isAccountNonExpired()
+                        || !userDetails.isCredentialsNonExpired()) {
+
+                    SecurityContextHolder.clearContext();
+
+                    authenticationEntryPoint.commence(
+                            request,
+                            response,
+                            new BadCredentialsException(
+                                    "User account is not available."));
+
+                    return;
+                }
+
                 if (jwtService.isTokenValid(token, userDetails)) {
 
                     UsernamePasswordAuthenticationToken authentication =

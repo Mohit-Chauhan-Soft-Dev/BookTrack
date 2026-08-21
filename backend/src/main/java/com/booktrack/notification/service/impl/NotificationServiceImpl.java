@@ -179,22 +179,7 @@ public class NotificationServiceImpl
 
                 notificationValidator.validateUserExists(userId);
 
-                Pageable pageable = PageableUtils.createPageable(
-                                0,
-                                Integer.MAX_VALUE,
-                                "id",
-                                "asc");
-
-                Page<Notification> notificationPage = notificationRepository
-                                .findByUserIdAndReadFalse(
-                                                userId,
-                                                pageable);
-
-                notificationPage.getContent()
-                                .forEach(notification -> notification.setRead(true));
-
-                notificationRepository.saveAll(
-                                notificationPage.getContent());
+                notificationRepository.markAllAsRead(userId);
         }
 
         @Override
